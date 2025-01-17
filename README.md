@@ -1,6 +1,6 @@
 # Resume_and_Future_of_the_AI-GCM_weather-model
 
-The repository ports in Torch the model chosen from the ended project ["AI-GCM | The AI General Circulation Model"](https://www.cmcc.it/projects/ai-gcm-the-ai-general-circulation-model) and explain possible optimizations and evolutions of the architecture.
+The repository ports in Torch the model chosen from the ended project ["AI-GCM | The AI General Circulation Model"](https://www.cmcc.it/projects/ai-gcm-the-ai-general-circulation-model) and explains possible optimizations and evolutions of the architecture.
 
 In the subfolder [Pytorch_porting_of_UNet-Illumia](Pytorch_porting_of_UNet-Illumia) there is the model plus the training pipeline. The training file implements Data Parallelism with a dynamic DataLoader and it is written with different  HPC implementations/communications.
 
