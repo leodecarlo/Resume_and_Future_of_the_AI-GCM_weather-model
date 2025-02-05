@@ -1,4 +1,3 @@
-#Implementing Asynchronous Data Prefetching to GPU
 #Asynchronous data prefetching involves loading the next batch of data and 
 # transferring it to the GPU while the current batch is being processed by the model. 
 # This can reduce idle time for the GPU and improve training speed.
@@ -169,11 +168,11 @@ def main():
     # Create dataset and dataloader with DistributedSampler
     dataset = NetCDFDataset(features_path, leadtime=1, start_year=1981, end_year=2017)
     sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=True) #ensures each process in the distributed training setup receives a unique subset of the data
-    dataloader = DataLoader(dataset, batch_size=1, sampler=sampler, pin_memory=True, num_workers=4,persistent_workers=True, worker_init_fn=worker_init_fn)
+    dataloader = DataLoader(dataset, batch_size=4, sampler=sampler, pin_memory=True, num_workers=4,persistent_workers=True, worker_init_fn=worker_init_fn)
 
     val_dataset = NetCDFDataset(features_path, leadtime=1, start_year=2018, end_year=2019)
     val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=1, sampler=val_sampler, pin_memory=True, num_workers=4, persistent_workers=True, worker_init_fn=worker_init_fn)
+    val_dataloader = DataLoader(val_dataset, batch_size=4, sampler=val_sampler, pin_memory=True, num_workers=4, persistent_workers=True, worker_init_fn=worker_init_fn)
 
     # Define model, loss function, and optimizer
     model = Generator(input_channels=6, output_channels=6).to(device)
@@ -267,8 +266,8 @@ def main():
         train_loss = np.array(train_loss)
         val_loss = np.array(val_loss)
 
-        np.save('/leonardo_work/DL4SF_Illumia_0/UNET_Torch/prova_train_loss_u2net.npy', train_loss)
-        np.save('/leonardo_work/DL4SF_Illumia_0/UNET_Torch/prova_val_loss_u2net.npy', val_loss)
+        np.save('/leonardo_work/DL4SF_Illumia_0/UNET_Torch/prova_train_loss_torchrun_pref.npy', train_loss)
+        np.save('/leonardo_work/DL4SF_Illumia_0/UNET_Torch/prova_val_loss_torchrun_pref.npy', val_loss)
 
         # Visualization
         # Since num_workers=4, it's safe to iterate over the prefetch_train_loader (which gives back batches)
@@ -289,22 +288,22 @@ def main():
 
         # Plotting
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        input_plot = axes[0].imshow(input_image_np, cmap='viridis')
+        input_plot = axes[0].imshow(input_image_np, cmap='viridis',origin = 'lower')
         axes[0].set_title('Input Image')
         axes[0].axis('off')
         fig.colorbar(input_plot, ax=axes[0])
 
-        target_plot = axes[1].imshow(target_image_np, cmap='viridis')
+        target_plot = axes[1].imshow(target_image_np, cmap='viridis', origin = 'lower')
         axes[1].set_title('Target Image')
         axes[1].axis('off')
         fig.colorbar(target_plot, ax=axes[1])
 
-        output_plot = axes[2].imshow(output_image_np, cmap='viridis')
+        output_plot = axes[2].imshow(output_image_np, cmap='viridis', origin = 'lower')
         axes[2].set_title('Output Image')
         axes[2].axis('off')
         fig.colorbar(output_plot, ax=axes[2])
 
-        plt.savefig('/leonardo_work/DL4SF_Illumia_0/UNET_Torch/prova_plot_u2net.png')
+        plt.savefig('/leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_plot_torchrun_nopref.png')
         plt.close(fig)  # Close the figure to free memory
 
     # Shutdown the process group

@@ -36,8 +36,8 @@ Basically we will use the `mpi` versions, because they don't give problems with 
 
 ## 2. Slurm Scripts
 
-1.**`GPUslurm_test.sh`**
-- Description: A Slurm script to run the model on a single-GPU-node with torchrun.
+1.**`multinode_torchrun.sh`**
+- Description: A Slurm script for multi-GPU-node with `torchrun`.
 
 2. `GPUslurm_test_2.sh`
 - Description: A modified Slurm script for multi-GPU-node with torchrun (gave problems).

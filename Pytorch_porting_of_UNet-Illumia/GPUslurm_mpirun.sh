@@ -1,14 +1,15 @@
 #!/bin/bash
 #SBATCH --account=cin_staff
-#SBATCH --nodes=2
-#SBATCH --ntasks-per-node=4          # Number of tasks per node (aligns with GPUs)
-#SBATCH --gres=gpu:4                 # Request 4 GPUs per node
-#SBATCH --cpus-per-task=8            # CPUs per task
+#SBATCH --nodes=6
+#SBATCH --ntasks-per-node=4          
+#SBATCH --gres=gpu:4                 
+#SBATCH --cpus-per-task=8           
 #SBATCH --error=%j.err
 #SBATCH --output=%j.out
 #SBATCH --partition=boost_usr_prod
-#SBATCH --qos=boost_qos_dbg           # Uncomment if needed
-#SBATCH --time=00:12:00
+#SBATCH --time=24:00:00
+####SBATCH --qos=boost_qos_dbg           
+####SBATCH --time=00:20:00
 #SBATCH --exclusive
 
 # Set variables
@@ -42,6 +43,7 @@ module load nccl
 source /leonardo_work/DL4SF_Illumia_0/UNET_Torch/UNET_env/bin/activate
 #source /leonardo_work/DL4SF_Illumia_0/ldecarlo/OpenSTL/openstl_env/bin/activate
 
+echo "I am GPUslurm_mpirun.sh"
 
 # Set the number of OpenMP threads to the number of CPUs per task
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
@@ -59,7 +61,7 @@ mpirun -n $SLURM_NTASKS \
        -x MASTER_ADDR=$MASTER_ADDR \
        -x MASTER_PORT=$MASTER_PORT \
        -x OMP_NUM_THREADS \
-       $(which python) /leonardo_work/DL4SF_Illumia_0/UNET_Torch/prova_torch_v4_mpi.py
+       $(which python) /leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_torch_v3_mpi.py
        
        
        #$(which python) /leonardo_work/DL4SF_Illumia_0/UNET_Torch/hello_ddp.py
