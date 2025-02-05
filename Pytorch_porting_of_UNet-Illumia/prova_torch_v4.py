@@ -303,7 +303,7 @@ def main():
         axes[2].axis('off')
         fig.colorbar(output_plot, ax=axes[2])
 
-        plt.savefig('/leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_plot_torchrun_nopref.png')
+        plt.savefig('/leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_plot_torchrun_pref.png')
         plt.close(fig)  # Close the figure to free memory
 
     # Shutdown the process group
