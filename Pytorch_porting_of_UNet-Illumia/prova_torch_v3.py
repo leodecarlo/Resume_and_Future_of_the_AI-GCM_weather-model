@@ -110,7 +110,7 @@ def main():
     # Create dataset and dataloader with DistributedSampler
     dataset = NetCDFDataset(features_path, leadtime=1, start_year=1981, end_year=2017)
     sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=True) #ensures each process in the distributed training setup receives a unique subset of the data
-    dataloader = DataLoader(dataset, batch_size=4, sampler=sampler, pin_memory=True, num_workers=4)
+    dataloader = DataLoader(dataset, batch_size=4, sampler=sampler, pin_memory=True, num_workers=4) # increase num_workers to 4 to speed up data loading
 
     val_dataset = NetCDFDataset(features_path, leadtime=1, start_year=2018, end_year=2019)
     val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=True)
@@ -214,10 +214,10 @@ def main():
         # It effectively detaches the tensor from the computation graph.
         
         for batch in dataloader:
-            input_images = batch['features'].detach.float()
-            target_images = batch['labels'].detach.float()
+            input_images = batch['features'].data.float()
+            target_images = batch['labels'].data.float()
             outputs = model.module(input_images.to(device))
-            output_images = outputs.cpu().detach.float()
+            output_images = outputs.cpu().data.float()
             break
 
         # Convert to NumPy arrays

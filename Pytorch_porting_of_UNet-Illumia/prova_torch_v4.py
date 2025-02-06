@@ -1,4 +1,5 @@
-#Asynchronous data prefetching involves loading the next batch of data and 
+##MODIFY DATALOADER AS OSTL: Implementing Asynchronous Data Prefetching to GPU
+##Asynchronous data prefetching involves loading the next batch of data and 
 # transferring it to the GPU while the current batch is being processed by the model. 
 # This can reduce idle time for the GPU and improve training speed.
 
@@ -168,7 +169,7 @@ def main():
     # Create dataset and dataloader with DistributedSampler
     dataset = NetCDFDataset(features_path, leadtime=1, start_year=1981, end_year=2017)
     sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=True) #ensures each process in the distributed training setup receives a unique subset of the data
-    dataloader = DataLoader(dataset, batch_size=4, sampler=sampler, pin_memory=True, num_workers=4,persistent_workers=True, worker_init_fn=worker_init_fn)
+    dataloader = DataLoader(dataset, batch_size=4, sampler=sampler, pin_memory=True, num_workers=4,persistent_workers=True, worker_init_fn=worker_init_fn) # increase num_workers to 4 to speed up data loading
 
     val_dataset = NetCDFDataset(features_path, leadtime=1, start_year=2018, end_year=2019)
     val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=True)
@@ -188,7 +189,7 @@ def main():
     prefetch_train_loader = PrefetchLoader(dataloader, device)
     prefetch_val_loader = PrefetchLoader(val_dataloader, device)
     
-    epochs = 4
+    epochs = 30
     
     # Training loop
     for epoch in range(epochs):
@@ -303,7 +304,7 @@ def main():
         axes[2].axis('off')
         fig.colorbar(output_plot, ax=axes[2])
 
-        plt.savefig('/leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_plot_torchrun_pref.png')
+        plt.savefig('/leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_plot_torchrun_nopref.png')
         plt.close(fig)  # Close the figure to free memory
 
     # Shutdown the process group

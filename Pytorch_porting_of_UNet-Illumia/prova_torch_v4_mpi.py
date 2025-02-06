@@ -1,5 +1,5 @@
-
-#Asynchronous data prefetching involves loading the next batch of data and 
+##MODIFY DATALOADER AS OSTL: Implementing Asynchronous Data Prefetching to GPU
+##Asynchronous data prefetching involves loading the next batch of data and 
 # transferring it to the GPU while the current batch is being processed by the model. 
 # This can reduce idle time for the GPU and improve training speed.
 
@@ -67,7 +67,7 @@ class PrefetchLoader:
 
 
 class NetCDFDataset(Dataset):
-    def __init__(self, features_file_path, leadtime=1, start_year=1980, end_year=2020):
+    def __init__(self, features_file_path, leadtime=1, start_year=1981, end_year=2020):
         self.features_file_path = features_file_path
         self.leadtime = leadtime  #The forecast lead time (default is 1 hour).
         self.start_year = start_year
@@ -145,19 +145,27 @@ def worker_init_fn(worker_id):
 
 
 def main():
-    # Initialize the process group with 'nccl' backend (optimized for NVIDIA GPUs)
-    dist.init_process_group(backend='nccl')
 
-    # Get rank and world size from torchrun's environment variables
-    rank = dist.get_rank()
-    world_size = dist.get_world_size()
+    # Read OpenMPI's rank and world size
+    rank = int(os.environ.get('OMPI_COMM_WORLD_RANK', 0))
+    world_size = int(os.environ.get('OMPI_COMM_WORLD_SIZE', 1))
 
-    # Get local rank from torchrun's environment variables
-    local_rank = int(os.environ.get('LOCAL_RANK', 0))
-
-    # Set device based on local_rank
+    # Set RANK and WORLD_SIZE for PyTorch
+    os.environ['RANK'] = str(rank)
+    os.environ['WORLD_SIZE'] = str(world_size)
+    
+    # Initialize the process group with 'nccl' backend
+    dist.init_process_group(backend='nccl', init_method='env://')
+   
+    print(f"Hello from rank {rank} out of {world_size}")
+    
+     # Determine local rank for GPU assignment
+    GPUS_PER_NODE = int(os.environ.get('GPUS_PER_NODE', 4))  # Default to 4 if not set
+    local_rank = rank % GPUS_PER_NODE
     device = torch.device(f'cuda:{local_rank}')
-    torch.cuda.set_device(device)
+    torch.cuda.set_device(device)    
+
+
 
     # Print rank and device info for debugging (only for rank 0)
     if rank == 0:
@@ -169,7 +177,7 @@ def main():
     # Create dataset and dataloader with DistributedSampler
     dataset = NetCDFDataset(features_path, leadtime=1, start_year=1981, end_year=2017)
     sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=True) #ensures each process in the distributed training setup receives a unique subset of the data
-    dataloader = DataLoader(dataset, batch_size=4, sampler=sampler, pin_memory=True, num_workers=4,persistent_workers=True, worker_init_fn=worker_init_fn)
+    dataloader = DataLoader(dataset, batch_size=4, sampler=sampler, pin_memory=True, num_workers=4,persistent_workers=True, worker_init_fn=worker_init_fn) # increase num_workers to 4 to speed up data loading
 
     val_dataset = NetCDFDataset(features_path, leadtime=1, start_year=2018, end_year=2019)
     val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=True)
@@ -186,10 +194,11 @@ def main():
     train_loss = []
     val_loss = []
 
+
     prefetch_train_loader = PrefetchLoader(dataloader, device)
     prefetch_val_loader = PrefetchLoader(val_dataloader, device)
     
-    epochs = 4
+    epochs = 30
     
     # Training loop
     for epoch in range(epochs):
@@ -267,8 +276,8 @@ def main():
         train_loss = np.array(train_loss)
         val_loss = np.array(val_loss)
 
-        np.save('/leonardo_work/DL4SF_Illumia_0/UNET_Torch/prova_train_loss_torchrun_pref.npy', train_loss)
-        np.save('/leonardo_work/DL4SF_Illumia_0/UNET_Torch/prova_val_loss_torchrun_pref.npy', val_loss)
+        np.save('/leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_train_loss_mpi_pref.npy', train_loss)
+        np.save('/leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_val_loss_mpi_pref.npy', val_loss)
 
         # Visualization
         # Since num_workers=4, it's safe to iterate over the prefetch_train_loader (which gives back batches)
@@ -304,7 +313,7 @@ def main():
         axes[2].axis('off')
         fig.colorbar(output_plot, ax=axes[2])
 
-        plt.savefig('/leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_plot_mpi_pref.png')
+        plt.savefig('/leonardo_work/DL4SF_Illumia2/UNET_Torch/prova_plot_mpi_nopref.png')
         plt.close(fig)  # Close the figure to free memory
 
     # Shutdown the process group
